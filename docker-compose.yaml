@@ -1,13 +1,13 @@
 services:
-  momentum-dev:
+  devbox:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: momentum-dev
-    hostname: momentum-dev
+    container_name: devbox
+    hostname: devbox
     volumes:
-      - /opt/momentum:/workspace:cached      # your real code clone, NOT in this repo
-      - momentum-node-modules:/workspace/node_modules
+      - /opt/devbox:/workspace:cached      # your real code clone, NOT in this repo
+      - devbox-node-modules:/workspace/node_modules
       - claude-config:/home/dev/.claude
       - codex-config:/home/dev/.codex
       - codeserver-config:/home/dev/.config/code-server
@@ -26,7 +26,7 @@ services:
     command: ["/usr/local/bin/entrypoint.sh"]
 
 volumes:
-  momentum-node-modules:
+  devbox-node-modules:
   claude-config:
   codex-config:
   codeserver-config:
