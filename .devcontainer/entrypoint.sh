@@ -18,17 +18,23 @@ chmod 700 /home/dev/.ssh
 # by the volume mounts.
 chown -R dev:dev /home/dev
 
-# Surface per-stack env vars to the shells where dev servers actually run.
-# Compose injects DEV_PORT onto PID 1 (this script), but neither vector that
-# gives a user a shell inherits it: sshd login shells get a fresh environment,
-# and the sudo'd code-server below is stripped by sudo's env_reset. Without
-# this, `echo $DEV_PORT` is empty and `process.env.DEV_PORT` is undefined, so
-# Vite falls back to its default port (see README "Running dev servers").
-# /etc/profile.d covers SSH login shells; the explicit assignment on the
-# code-server exec covers its integrated terminals. Written fresh each start so
+# Surface env vars to the shells where users actually run things. Compose
+# injects vars onto PID 1 (this script) only; neither vector that gives a user a
+# shell inherits them: sshd login shells get a fresh environment, and the sudo'd
+# code-server below is stripped by sudo's env_reset. Without this:
+#   - DEV_PORT is empty, so `process.env.DEV_PORT` is undefined and Vite falls
+#     back to its default port (see README "Running dev servers"); and
+#   - CLAUDE_CONFIG_DIR is unset, so Claude Code writes its account/onboarding
+#     state to ~/.claude.json at the home root (NOT a volume) instead of inside
+#     the persisted claude-config volume — wiped every redeploy, forcing a
+#     re-login. Pointing it at /home/dev/.claude puts .claude.json next to the
+#     already-persisted .credentials.json so the login survives recreations.
+# /etc/profile.d covers SSH login shells; the explicit assignments on the
+# code-server exec cover its integrated terminals. Written fresh each start so
 # the compose value stays the source of truth.
 cat > /etc/profile.d/devbox-env.sh <<EOF
 export DEV_PORT=${DEV_PORT:-8081}
+export CLAUDE_CONFIG_DIR=/home/dev/.claude
 EOF
 chmod 644 /etc/profile.d/devbox-env.sh
 
@@ -45,5 +51,5 @@ mkdir -p /etc/ssh/keys
 
 # code-server in foreground. --auth none is safe ONLY because the 8443
 # route sits behind Pocket-ID. Never expose 8443 outside the tunnel.
-exec sudo -u dev HOME=/home/dev DEV_PORT="${DEV_PORT:-8081}" \
+exec sudo -u dev HOME=/home/dev DEV_PORT="${DEV_PORT:-8081}" CLAUDE_CONFIG_DIR=/home/dev/.claude \
   code-server --bind-addr 0.0.0.0:8443 --auth none /workspace

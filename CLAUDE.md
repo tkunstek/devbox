@@ -61,12 +61,15 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
   `localhost`, which resolves to IPv6 `::1` first). Full rationale in `README.md`
   → "Running dev servers".
 - **`CLAUDE_CONFIG_DIR=/home/dev/.claude` keeps Claude Code logged in across
-  recreations.** Claude's OAuth tokens (`~/.claude/.credentials.json`) already sat
-  inside the `claude-config` volume, but its account/onboarding state defaults to
+  recreations — but only if it reaches the shell that runs `claude`.** Claude's
+  OAuth tokens (`~/.claude/.credentials.json`) already sat inside the
+  `claude-config` volume, but its account/onboarding state defaults to
   `~/.claude.json` at the home root — not a volume — so it was wiped every redeploy
-  and forced a re-login. Setting `CLAUDE_CONFIG_DIR` makes that dir the base for
-  *both* files, so `.claude.json` lands in the persisted volume. Don't unset it,
-  and don't point it anywhere that isn't a mounted volume.
+  and forced a re-login. `CLAUDE_CONFIG_DIR` makes that dir the base for *both*
+  files, so `.claude.json` lands in the persisted volume. It must be exported by
+  the entrypoint (profile.d + code-server exec, like `DEV_PORT` below) — setting
+  it in compose `environment:` does NOT work, because that only reaches PID 1, not
+  the user's `claude` process.
 
 ## CLIs baked into the image
 

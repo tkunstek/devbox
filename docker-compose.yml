@@ -17,14 +17,10 @@ services:
     environment:
       # Claude/Codex authenticate via your subscriptions (interactive login),
       # persisted per-stack in claude-config / codex-config — no API keys.
-      # CLAUDE_CONFIG_DIR points Claude Code at the persisted claude-config
-      # volume for BOTH its credentials AND its account/onboarding state. By
-      # default the OAuth tokens land in ~/.claude/.credentials.json (inside the
-      # volume, fine) but the account identity lands in ~/.claude.json at the
-      # home root, which is NOT a volume — so it was wiped on every container
-      # recreation and forced a re-login. Setting this writes .claude.json into
-      # /home/dev/.claude too, so the login survives recreations.
-      - CLAUDE_CONFIG_DIR=/home/dev/.claude
+      # NOTE: vars set here land on PID 1 only — sshd login shells and the
+      # sudo'd code-server do NOT inherit them. Anything users need at a shell
+      # (DEV_PORT, and CLAUDE_CONFIG_DIR for Claude login persistence) is
+      # re-exported by the entrypoint via /etc/profile.d + the code-server exec.
       - SSH_PUBKEY=${SSH_PUBKEY:-}
       - DEV_PORT=${DEV_PORT:-8081}
     ports:
