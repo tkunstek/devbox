@@ -1,0 +1,61 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this repo is
+
+A **deployment artifact**, not an application. It builds a Docker image
+(`Dockerfile`) and a Compose stack (`docker-compose.yml`) for isolated,
+per-customer remote dev environments. There is no build/lint/test step here —
+the three files (`Dockerfile`, `docker-compose.yml`, `.devcontainer/entrypoint.sh`)
+are the whole codebase. See `README.md` for the user-facing operating guide.
+
+## How changes are deployed and verified
+
+- The stack is deployed by **Portainer from this git repo**, one stack per
+  customer, on a DGX Spark (`solstice`, **arm64**).
+- The only way a change reaches a running container is: **commit → push to
+  `main` → redeploy the stack in Portainer**. Dockerfile changes require a
+  **rebuild** (not just recreate).
+- There is no Docker daemon on the dev MacBook, so changes **cannot be verified
+  locally**. The redeploy on the DGX is the real test — never claim a fix works
+  until the user reports the rebuilt container's behavior. Verify with
+  `docker ps` (status `Up`, ports mapped) and `docker logs <instance>`.
+- Pushing to `main` is guarded by the harness. **Commit locally; the user runs
+  the push** (`! git push origin main`).
+
+## Architecture essentials
+
+- **One parameterized service deployed N times.** All customer-specific values
+  are env vars with defaults (`INSTANCE`, `SSH_PORT`, `CODE_PORT`, `DEV_PORT`,
+  `SSH_PUBKEY`); each must be unique per stack. Isolation comes from Portainer
+  namespacing named volumes per stack — there is no per-customer code here.
+- **The container runs as root, then drops to `dev`.** `entrypoint.sh` (PID 1,
+  root) provisions SSH host keys + `authorized_keys`, `chown`s `/home/dev`,
+  starts `sshd`, then `exec sudo -u dev … code-server`. Anything needing root
+  (chown over volume mounts, host-key gen) must happen in the entrypoint, not the
+  Dockerfile — volume mounts mask build-time changes under their mount points.
+
+## Non-obvious constraints (each caused a real bug — do not regress)
+
+- **uid/gid 1000 collides** with the `node` user in `node:20-bookworm`. The
+  Dockerfile frees 1000 then creates `dev` with **no error masking** — keep it
+  that way so user-creation failures break the build instead of crash-looping.
+- **Named-volume ownership** is inherited from the image dir at first (empty)
+  mount. `/workspace` is `chown`ed to `dev` in the image so fresh volumes come up
+  dev-owned; existing volumes are not retroactively fixed.
+- **`no-new-privileges` breaks `sudo`** (setuid). It was removed deliberately so
+  `dev`'s passwordless sudo works — do not re-add it without removing sudo.
+- **SSH host keys** live in the `sshhostkeys` volume (`/etc/ssh/keys`) and `sshd`
+  is started with `-h` pointing there, so the host identity survives recreation.
+  Don't move host keys back into `/etc/ssh` (not a volume → key churn).
+- **Dev servers must bind `0.0.0.0`** and listen on `DEV_PORT`; reach them at
+  `solstice.local:DEV_PORT` (or `127.0.0.1:DEV_PORT` via VS Code forward — never
+  `localhost`, which resolves to IPv6 `::1` first). Full rationale in `README.md`
+  → "Running dev servers".
+
+## CLIs baked into the image
+
+claude-code, codex, gh, cloudflared, supabase, netlify. CLI installs are
+**arch-aware** (apt repos / arch-detected tarball) because the target is arm64;
+keep them that way.
