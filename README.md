@@ -68,6 +68,19 @@ Suggested scheme:
 
 ---
 
+## Updating the stacks
+
+Auto-deploy is set up: a **push to `main` fires a Portainer webhook** that
+redeploys the stacks from this repo — no manual redeploy needed. Commit, push,
+and the running containers pick up the change.
+
+> Dockerfile changes (image contents — installed CLIs, the entrypoint) need a
+> **rebuild**, not just a recreate. Compose/env-only changes recreate fine.
+> Confirm the webhook rebuilds the image for Dockerfile changes; if not, trigger
+> a rebuild for those in Portainer.
+
+---
+
 ## Connecting
 
 ### MacBook — VS Code Remote-SSH (primary)
