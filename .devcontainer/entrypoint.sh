@@ -8,6 +8,12 @@ set -e
 #chmod 700 /home/dev/.ssh
 #chmod 600 /home/dev/.ssh/authorized_keys
 
+# Named volumes (claude-config, codex-config, codeserver-config, vscode-server,
+# sshkeys) mount over /home/dev/* as empty root-owned dirs. code-server and the
+# CLIs run as `dev`, so fix ownership at runtime — a build-time chown is masked
+# by the volume mounts.
+chown -R dev:dev /home/dev
+
 # sshd needs host keys; generate if the volume doesn't have them yet
 ssh-keygen -A
 
