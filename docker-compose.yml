@@ -21,8 +21,6 @@ services:
       - "${SSH_PORT:-2222}:22"
       - "${CODE_PORT:-8443}:8443"
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     command: ["/usr/local/bin/entrypoint.sh"]
 
 volumes:

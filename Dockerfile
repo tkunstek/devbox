@@ -12,15 +12,44 @@ ARG USER_GID=1000
 RUN if getent passwd $USER_UID >/dev/null; then userdel -r "$(getent passwd $USER_UID | cut -d: -f1)" 2>/dev/null || true; fi \
  && if getent group $USER_GID >/dev/null; then groupdel "$(getent group $USER_GID | cut -d: -f1)" 2>/dev/null || true; fi \
  && groupadd --gid $USER_GID $USERNAME \
- && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+ && useradd --uid $USER_UID --gid $USER_GID -m --shell /bin/bash $USERNAME \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
-      git curl ca-certificates less openssh-server sudo gnupg \
+      git curl wget ca-certificates gnupg less sudo openssh-server \
+      bash-completion vim nano \
+      iputils-ping dnsutils traceroute net-tools netcat-openbsd \
+      jq unzip zip tree rsync htop procps \
  && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @anthropic-ai/claude-code @openai/codex
+RUN npm install -g @anthropic-ai/claude-code @openai/codex netlify-cli
 
 RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+# GitHub CLI (official apt repo, arch-aware)
+RUN mkdir -p -m 755 /etc/apt/keyrings \
+ && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends gh \
+ && rm -rf /var/lib/apt/lists/*
+
+# Cloudflare Tunnel client (official apt repo, supports amd64/arm64)
+RUN mkdir -p /usr/share/keyrings \
+ && curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg -o /usr/share/keyrings/cloudflare-main.gpg \
+ && echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared bookworm main" \
+      > /etc/apt/sources.list.d/cloudflared.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends cloudflared \
+ && rm -rf /var/lib/apt/lists/*
+
+# Supabase CLI (release tarball; npm global install is no longer supported)
+RUN ARCH="$(dpkg --print-architecture)" \
+ && curl -fsSL "https://github.com/supabase/cli/releases/latest/download/supabase_linux_${ARCH}.tar.gz" -o /tmp/supabase.tar.gz \
+ && tar -xzf /tmp/supabase.tar.gz -C /usr/local/bin supabase \
+ && rm /tmp/supabase.tar.gz \
+ && supabase --version
 
 # sshd: keys only, no passwords, no root login
 RUN mkdir -p /var/run/sshd \
