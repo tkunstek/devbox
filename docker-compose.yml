@@ -18,9 +18,11 @@ services:
       # Claude/Codex authenticate via your subscriptions (interactive login),
       # persisted per-stack in claude-config / codex-config — no API keys.
       - SSH_PUBKEY=${SSH_PUBKEY:-}
+      - DEV_PORT=${DEV_PORT:-8081}
     ports:
       - "${SSH_PORT:-2222}:22"
       - "${CODE_PORT:-8443}:8443"
+      - "${DEV_PORT:-8081}:${DEV_PORT:-8081}"   # app dev server; reachable at solstice.local:${DEV_PORT}
     restart: unless-stopped
     command: ["/usr/local/bin/entrypoint.sh"]
 
