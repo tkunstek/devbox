@@ -29,12 +29,18 @@ chown -R dev:dev /home/dev
 #     the persisted claude-config volume — wiped every redeploy, forcing a
 #     re-login. Pointing it at /home/dev/.claude puts .claude.json next to the
 #     already-persisted .credentials.json so the login survives recreations.
+#   - DISABLE_AUTOUPDATER is unset, so Claude Code tries to self-update into the
+#     root-owned npm global dir (it's installed via `npm install -g` as root),
+#     fails, and spams "npm global folder isn't writable". Disable it: claude is
+#     updated by rebuilding the image, and any in-container update would land in
+#     a non-volume dir and vanish on recreation anyway.
 # /etc/profile.d covers SSH login shells; the explicit assignments on the
 # code-server exec cover its integrated terminals. Written fresh each start so
 # the compose value stays the source of truth.
 cat > /etc/profile.d/devbox-env.sh <<EOF
 export DEV_PORT=${DEV_PORT:-8081}
 export CLAUDE_CONFIG_DIR=/home/dev/.claude
+export DISABLE_AUTOUPDATER=1
 EOF
 chmod 644 /etc/profile.d/devbox-env.sh
 
@@ -51,5 +57,5 @@ mkdir -p /etc/ssh/keys
 
 # code-server in foreground. --auth none is safe ONLY because the 8443
 # route sits behind Pocket-ID. Never expose 8443 outside the tunnel.
-exec sudo -u dev HOME=/home/dev DEV_PORT="${DEV_PORT:-8081}" CLAUDE_CONFIG_DIR=/home/dev/.claude \
+exec sudo -u dev HOME=/home/dev DEV_PORT="${DEV_PORT:-8081}" CLAUDE_CONFIG_DIR=/home/dev/.claude DISABLE_AUTOUPDATER=1 \
   code-server --bind-addr 0.0.0.0:8443 --auth none /workspace

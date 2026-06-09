@@ -76,3 +76,10 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
 claude-code, codex, gh, cloudflared, supabase, netlify. CLI installs are
 **arch-aware** (apt repos / arch-detected tarball) because the target is arm64;
 keep them that way.
+
+claude-code is installed `npm install -g` **as root**, so its global dir isn't
+`dev`-writable and its self-updater can't run — it would spam "npm global folder
+isn't writable". The entrypoint sets `DISABLE_AUTOUPDATER=1` (delivered to shells
+the same way as `DEV_PORT`/`CLAUDE_CONFIG_DIR`). **Claude is updated by rebuilding
+the image** (the `npm install -g` pulls latest at build); don't re-enable the
+in-container updater — its writes land in a non-volume dir and vanish on recreation.
