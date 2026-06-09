@@ -12,6 +12,7 @@ services:
       - codeserver-config:/home/dev/.config/code-server
       - vscode-server:/home/dev/.vscode-server
       - sshkeys:/home/dev/.ssh
+      - sshhostkeys:/etc/ssh/keys           # persist host keys so SSH identity is stable across recreations
     working_dir: /workspace
     environment:
       # Claude/Codex authenticate via your subscriptions (interactive login),
@@ -30,3 +31,4 @@ volumes:
   codeserver-config:
   vscode-server:
   sshkeys:
+  sshhostkeys:

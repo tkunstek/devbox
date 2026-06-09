@@ -18,11 +18,16 @@ chmod 700 /home/dev/.ssh
 # by the volume mounts.
 chown -R dev:dev /home/dev
 
-# sshd needs host keys; generate if the volume doesn't have them yet
-ssh-keygen -A
+# Persistent SSH host keys. /etc/ssh is not a volume, so a fresh container
+# (every redeploy/rebuild) would regenerate host keys and trip the client's
+# "REMOTE HOST IDENTIFICATION HAS CHANGED" guard. Keep them in the sshhostkeys
+# volume so a stack's SSH identity is stable across container recreations.
+mkdir -p /etc/ssh/keys
+[ -f /etc/ssh/keys/ssh_host_ed25519_key ] || ssh-keygen -q -t ed25519 -f /etc/ssh/keys/ssh_host_ed25519_key -N ''
+[ -f /etc/ssh/keys/ssh_host_rsa_key ]     || ssh-keygen -q -t rsa -b 4096 -f /etc/ssh/keys/ssh_host_rsa_key -N ''
 
-# Start sshd in the background (key-gated build path)
-/usr/sbin/sshd
+# Start sshd in the background using the persisted host keys
+/usr/sbin/sshd -h /etc/ssh/keys/ssh_host_ed25519_key -h /etc/ssh/keys/ssh_host_rsa_key
 
 # code-server in foreground. --auth none is safe ONLY because the 8443
 # route sits behind Pocket-ID. Never expose 8443 outside the tunnel.
