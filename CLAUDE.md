@@ -49,6 +49,13 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
 - **SSH host keys** live in the `sshhostkeys` volume (`/etc/ssh/keys`) and `sshd`
   is started with `-h` pointing there, so the host identity survives recreation.
   Don't move host keys back into `/etc/ssh` (not a volume → key churn).
+- **`DEV_PORT` must be re-exported to user shells by the entrypoint.** Compose
+  injects it onto PID 1 only; sshd login shells start from a clean environment and
+  `sudo`'s `env_reset` strips it from the code-server it launches — so a terminal's
+  `$DEV_PORT` / `process.env.DEV_PORT` is empty and Vite silently falls back to its
+  default port. The entrypoint writes `/etc/profile.d/devbox-env.sh` (SSH shells)
+  and passes `DEV_PORT=…` on the `sudo … code-server` exec (its integrated
+  terminals). Keep both paths if you add more per-stack vars users need at a shell.
 - **Dev servers must bind `0.0.0.0`** and listen on `DEV_PORT`; reach them at
   `solstice.local:DEV_PORT` (or `127.0.0.1:DEV_PORT` via VS Code forward — never
   `localhost`, which resolves to IPv6 `::1` first). Full rationale in `README.md`

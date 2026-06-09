@@ -18,6 +18,20 @@ chmod 700 /home/dev/.ssh
 # by the volume mounts.
 chown -R dev:dev /home/dev
 
+# Surface per-stack env vars to the shells where dev servers actually run.
+# Compose injects DEV_PORT onto PID 1 (this script), but neither vector that
+# gives a user a shell inherits it: sshd login shells get a fresh environment,
+# and the sudo'd code-server below is stripped by sudo's env_reset. Without
+# this, `echo $DEV_PORT` is empty and `process.env.DEV_PORT` is undefined, so
+# Vite falls back to its default port (see README "Running dev servers").
+# /etc/profile.d covers SSH login shells; the explicit assignment on the
+# code-server exec covers its integrated terminals. Written fresh each start so
+# the compose value stays the source of truth.
+cat > /etc/profile.d/devbox-env.sh <<EOF
+export DEV_PORT=${DEV_PORT:-8081}
+EOF
+chmod 644 /etc/profile.d/devbox-env.sh
+
 # Persistent SSH host keys. /etc/ssh is not a volume, so a fresh container
 # (every redeploy/rebuild) would regenerate host keys and trip the client's
 # "REMOTE HOST IDENTIFICATION HAS CHANGED" guard. Keep them in the sshhostkeys
@@ -31,5 +45,5 @@ mkdir -p /etc/ssh/keys
 
 # code-server in foreground. --auth none is safe ONLY because the 8443
 # route sits behind Pocket-ID. Never expose 8443 outside the tunnel.
-exec sudo -u dev HOME=/home/dev \
+exec sudo -u dev HOME=/home/dev DEV_PORT="${DEV_PORT:-8081}" \
   code-server --bind-addr 0.0.0.0:8443 --auth none /workspace
