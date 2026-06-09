@@ -53,6 +53,13 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
   `solstice.local:DEV_PORT` (or `127.0.0.1:DEV_PORT` via VS Code forward — never
   `localhost`, which resolves to IPv6 `::1` first). Full rationale in `README.md`
   → "Running dev servers".
+- **`CLAUDE_CONFIG_DIR=/home/dev/.claude` keeps Claude Code logged in across
+  recreations.** Claude's OAuth tokens (`~/.claude/.credentials.json`) already sat
+  inside the `claude-config` volume, but its account/onboarding state defaults to
+  `~/.claude.json` at the home root — not a volume — so it was wiped every redeploy
+  and forced a re-login. Setting `CLAUDE_CONFIG_DIR` makes that dir the base for
+  *both* files, so `.claude.json` lands in the persisted volume. Don't unset it,
+  and don't point it anywhere that isn't a mounted volume.
 
 ## CLIs baked into the image
 
