@@ -62,4 +62,9 @@ RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME
 COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Own /workspace as dev in the image. A fresh (empty) named volume inherits the
+# image dir's ownership on first mount, so the workspace volume comes up
+# dev-owned instead of root — no runtime chown needed.
+RUN mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace
+
 WORKDIR /workspace
