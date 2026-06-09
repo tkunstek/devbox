@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
-# SSH key setup — drop your laptop's public key into the sshkeys volume once
-#mkdir -p /home/dev/.ssh
-#touch /home/dev/.ssh/authorized_keys
-#chown -R dev:dev /home/dev/.ssh
-#chmod 700 /home/dev/.ssh
-#chmod 600 /home/dev/.ssh/authorized_keys
+# SSH public-key provisioning. SSH_PUBKEY is set per customer in the stack's
+# environment (Portainer). Written fresh each start so the env value is the
+# source of truth; the sshkeys volume persists host keys and perms. The strict
+# perms below are mandatory — sshd silently rejects keys otherwise.
+mkdir -p /home/dev/.ssh
+if [ -n "${SSH_PUBKEY:-}" ]; then
+  echo "$SSH_PUBKEY" > /home/dev/.ssh/authorized_keys
+fi
+chmod 700 /home/dev/.ssh
+[ -f /home/dev/.ssh/authorized_keys ] && chmod 600 /home/dev/.ssh/authorized_keys
 
 # Named volumes (claude-config, codex-config, codeserver-config, vscode-server,
 # sshkeys) mount over /home/dev/* as empty root-owned dirs. code-server and the

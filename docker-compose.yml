@@ -3,11 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: devbox
-    hostname: devbox
+    container_name: ${INSTANCE:-devbox}
+    hostname: ${INSTANCE:-devbox}
     volumes:
-      - /opt/devbox:/workspace:cached      # your real code clone, NOT in this repo
-      - devbox-node-modules:/workspace/node_modules
+      - workspace:/workspace                 # per-stack named volume; clone the customer repo inside the container
       - claude-config:/home/dev/.claude
       - codex-config:/home/dev/.codex
       - codeserver-config:/home/dev/.config/code-server
@@ -15,18 +14,19 @@ services:
       - sshkeys:/home/dev/.ssh
     working_dir: /workspace
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Claude/Codex authenticate via your subscriptions (interactive login),
+      # persisted per-stack in claude-config / codex-config — no API keys.
+      - SSH_PUBKEY=${SSH_PUBKEY:-}
     ports:
-      - "2222:22"
-      - "8443:8443"
+      - "${SSH_PORT:-2222}:22"
+      - "${CODE_PORT:-8443}:8443"
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     command: ["/usr/local/bin/entrypoint.sh"]
 
 volumes:
-  devbox-node-modules:
+  workspace:
   claude-config:
   codex-config:
   codeserver-config:
