@@ -7,17 +7,12 @@ services:
     hostname: ${INSTANCE:-devbox}
     volumes:
       - workspace:/workspace                 # per-stack named volume; clone the customer repo inside the container
-      - claude-config:/home/dev/.claude
-      - codex-config:/home/dev/.codex
-      - gh-config:/home/dev/.config/gh         # gh stores its token in ~/.config/gh/hosts.yml (no keyring in-container); persist so login survives recreation
-      - codeserver-config:/home/dev/.config/code-server
-      - vscode-server:/home/dev/.vscode-server
-      - sshkeys:/home/dev/.ssh
-      - sshhostkeys:/etc/ssh/keys           # persist host keys so SSH identity is stable across recreations
+      - home:/home/dev                       # everything per-tool lives under here: claude/codex/gh logins, code-server + vscode-server state, ~/.ssh, ~/.gitconfig, shell history. One volume so new tools persist without a compose change.
+      - sshhostkeys:/etc/ssh/keys           # SSH *host* identity — lives outside /home/dev (sshd -h points here); persisted so it's stable across recreations
     working_dir: /workspace
     environment:
-      # Claude/Codex authenticate via your subscriptions (interactive login),
-      # persisted per-stack in claude-config / codex-config — no API keys.
+      # Claude/Codex/gh authenticate via interactive login, persisted per-stack
+      # in the `home` volume — no API keys.
       # NOTE: vars set here land on PID 1 only — sshd login shells and the
       # sudo'd code-server do NOT inherit them. Anything users need at a shell
       # (DEV_PORT, and CLAUDE_CONFIG_DIR for Claude login persistence) is
@@ -33,10 +28,5 @@ services:
 
 volumes:
   workspace:
-  claude-config:
-  codex-config:
-  gh-config:
-  codeserver-config:
-  vscode-server:
-  sshkeys:
+  home:
   sshhostkeys:

@@ -47,13 +47,13 @@ Suggested scheme:
 | Volume | Mount | Holds |
 |--------|-------|-------|
 | `workspace` | `/workspace` | the customer's code |
-| `claude-config` | `/home/dev/.claude` | Claude subscription login |
-| `codex-config` | `/home/dev/.codex` | Codex subscription login |
-| `gh-config` | `/home/dev/.config/gh` | GitHub CLI (`gh`) login token |
-| `codeserver-config` | `/home/dev/.config/code-server` | code-server settings |
-| `vscode-server` | `/home/dev/.vscode-server` | VS Code Remote-SSH server |
-| `sshkeys` | `/home/dev/.ssh` | `authorized_keys` |
-| `sshhostkeys` | `/etc/ssh/keys` | stable SSH host identity |
+| `home` | `/home/dev` | everything per-tool: Claude / Codex / `gh` logins, code-server + VS Code server state, `~/.ssh`, `~/.gitconfig`, shell history |
+| `sshhostkeys` | `/etc/ssh/keys` | stable SSH host identity (lives outside `/home/dev`) |
+
+A single `home` volume means a new tool's login or dotfile persists with **no
+compose change** — it just lands under `/home/dev`. Only things *outside*
+`/home/dev` (the SSH host identity) need their own volume. `workspace` is kept
+separate on purpose so customer code has an independent lifecycle from config.
 
 ---
 

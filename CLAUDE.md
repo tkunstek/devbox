@@ -30,6 +30,13 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
   are env vars with defaults (`INSTANCE`, `SSH_PORT`, `CODE_PORT`, `DEV_PORT`,
   `SSH_PUBKEY`); each must be unique per stack. Isolation comes from Portainer
   namespacing named volumes per stack — there is no per-customer code here.
+- **Three volumes, by design.** `home:/home/dev` holds *all* per-tool state
+  (Claude/Codex/`gh` logins, code-server + VS Code server, `~/.ssh`,
+  `~/.gitconfig`, history) — so a new tool's dotfile persists with no compose
+  change. Don't re-split it into per-tool volumes (that was the old layout and
+  caused a fix-per-tool treadmill). Only state *outside* `/home/dev` gets its own
+  volume: `sshhostkeys:/etc/ssh/keys` (host identity). `workspace:/workspace` is
+  separate on purpose so code has an independent lifecycle from config.
 - **The container runs as root, then drops to `dev`.** `entrypoint.sh` (PID 1,
   root) provisions SSH host keys + `authorized_keys`, `chown`s `/home/dev`,
   starts `sshd`, then `exec sudo -u dev … code-server`. Anything needing root
@@ -43,7 +50,8 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
   that way so user-creation failures break the build instead of crash-looping.
 - **Named-volume ownership** is inherited from the image dir at first (empty)
   mount. `/workspace` is `chown`ed to `dev` in the image so fresh volumes come up
-  dev-owned; existing volumes are not retroactively fixed.
+  dev-owned; the entrypoint also `chown -R dev:dev /home/dev` every start to fix
+  the `home` volume (a build-time chown is masked by the mount).
 - **`no-new-privileges` breaks `sudo`** (setuid). It was removed deliberately so
   `dev`'s passwordless sudo works — do not re-add it without removing sudo.
 - **SSH host keys** live in the `sshhostkeys` volume (`/etc/ssh/keys`) and `sshd`
@@ -63,7 +71,7 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
 - **`CLAUDE_CONFIG_DIR=/home/dev/.claude` keeps Claude Code logged in across
   recreations — but only if it reaches the shell that runs `claude`.** Claude's
   OAuth tokens (`~/.claude/.credentials.json`) already sat inside the
-  `claude-config` volume, but its account/onboarding state defaults to
+  `home` volume, but its account/onboarding state defaults to
   `~/.claude.json` at the home root — not a volume — so it was wiped every redeploy
   and forced a re-login. `CLAUDE_CONFIG_DIR` makes that dir the base for *both*
   files, so `.claude.json` lands in the persisted volume. It must be exported by

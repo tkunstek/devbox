@@ -3,7 +3,7 @@ set -e
 
 # SSH public-key provisioning. SSH_PUBKEY is set per customer in the stack's
 # environment (Portainer). Written fresh each start so the env value is the
-# source of truth; the sshkeys volume persists host keys and perms. The strict
+# source of truth (`.ssh` itself persists in the `home` volume). The strict
 # perms below are mandatory — sshd silently rejects keys otherwise.
 mkdir -p /home/dev/.ssh
 if [ -n "${SSH_PUBKEY:-}" ]; then
@@ -12,10 +12,10 @@ fi
 chmod 700 /home/dev/.ssh
 [ -f /home/dev/.ssh/authorized_keys ] && chmod 600 /home/dev/.ssh/authorized_keys
 
-# Named volumes (claude-config, codex-config, codeserver-config, vscode-server,
-# sshkeys) mount over /home/dev/* as empty root-owned dirs. code-server and the
-# CLIs run as `dev`, so fix ownership at runtime — a build-time chown is masked
-# by the volume mounts.
+# The `home` volume mounts over /home/dev. A fresh volume is populated from the
+# image dir (dev-owned skel), but recreated/older volumes can have root-owned
+# paths, and a build-time chown is masked by the mount — so fix ownership at
+# runtime. code-server and the CLIs run as `dev` and must own their config.
 chown -R dev:dev /home/dev
 
 # Surface env vars to the shells where users actually run things. Compose
@@ -26,7 +26,7 @@ chown -R dev:dev /home/dev
 #     back to its default port (see README "Running dev servers"); and
 #   - CLAUDE_CONFIG_DIR is unset, so Claude Code writes its account/onboarding
 #     state to ~/.claude.json at the home root (NOT a volume) instead of inside
-#     the persisted claude-config volume — wiped every redeploy, forcing a
+#     the persisted home volume — wiped every redeploy, forcing a
 #     re-login. Pointing it at /home/dev/.claude puts .claude.json next to the
 #     already-persisted .credentials.json so the login survives recreations.
 #   - DISABLE_AUTOUPDATER is unset, so Claude Code tries to self-update into the
