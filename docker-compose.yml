@@ -9,6 +9,7 @@ services:
       - workspace:/workspace                 # per-stack named volume; clone the customer repo inside the container
       - claude-config:/home/dev/.claude
       - codex-config:/home/dev/.codex
+      - gh-config:/home/dev/.config/gh         # gh stores its token in ~/.config/gh/hosts.yml (no keyring in-container); persist so login survives recreation
       - codeserver-config:/home/dev/.config/code-server
       - vscode-server:/home/dev/.vscode-server
       - sshkeys:/home/dev/.ssh
@@ -34,6 +35,7 @@ volumes:
   workspace:
   claude-config:
   codex-config:
+  gh-config:
   codeserver-config:
   vscode-server:
   sshkeys:

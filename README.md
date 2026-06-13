@@ -49,6 +49,7 @@ Suggested scheme:
 | `workspace` | `/workspace` | the customer's code |
 | `claude-config` | `/home/dev/.claude` | Claude subscription login |
 | `codex-config` | `/home/dev/.codex` | Codex subscription login |
+| `gh-config` | `/home/dev/.config/gh` | GitHub CLI (`gh`) login token |
 | `codeserver-config` | `/home/dev/.config/code-server` | code-server settings |
 | `vscode-server` | `/home/dev/.vscode-server` | VS Code Remote-SSH server |
 | `sshkeys` | `/home/dev/.ssh` | `authorized_keys` |
