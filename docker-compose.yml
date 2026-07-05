@@ -7,6 +7,10 @@ services:
         # Bump in the Portainer stack env + redeploy with rebuild to force
         # fresh CLI installs (layer cache otherwise pins the old versions).
         - CLI_REFRESH=${CLI_REFRESH:-0}
+        # Selects .devcontainer/customers/<CUSTOMER>.sh at build time (default
+        # base = no-op). Set per stack in Portainer for customers needing extra
+        # tooling, e.g. CUSTOMER=d2 installs the 1Password CLI. Rebuild required.
+        - CUSTOMER=${CUSTOMER:-base}
     container_name: ${INSTANCE:-devbox}
     hostname: ${INSTANCE:-devbox}
     volumes:

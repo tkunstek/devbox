@@ -58,6 +58,18 @@ RUN ARCH="$(dpkg --print-architecture)" \
  && rm /tmp/supabase.tar.gz \
  && supabase --version
 
+# Per-customer tooling. CUSTOMER selects a setup script under
+# .devcontainer/customers/ (base.sh is a no-op default). Flip it via the
+# stack's CUSTOMER env in Portainer (compose build.args) + rebuild. This keeps
+# every customer's divergence in one reviewable file on a single `main` — no
+# per-customer branches or images. An unknown CUSTOMER (no matching script)
+# fails the build, by design. Runs late so shared layers above stay cacheable
+# across customers; the COPY busts this layer whenever any customer script
+# changes, which is fine (installs are the point of a rebuild).
+ARG CUSTOMER=base
+COPY .devcontainer/customers/ /usr/local/share/customers/
+RUN bash /usr/local/share/customers/${CUSTOMER}.sh
+
 # sshd: keys only, no passwords, no root login
 RUN mkdir -p /var/run/sshd \
  && sed -i 's/#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \

@@ -98,3 +98,25 @@ latest at build, but Docker's layer cache reuses the old layer unless
 `CLI_REFRESH` (Portainer stack env → compose `build.args`) changes, so a plain
 rebuild does NOT update the CLIs. Don't re-enable the in-container updater — its
 writes land in a non-volume dir and vanish on recreation.
+
+## Per-customer tooling
+
+Customer-specific tools are **not** done with branches or separate images —
+everything stays on a single `main`. The `CUSTOMER` build arg selects a script
+under `.devcontainer/customers/` that runs at build time as root:
+`.devcontainer/customers/<CUSTOMER>.sh` (default `base.sh`, a no-op). Each
+customer's divergence lives in exactly one reviewable file, e.g. `d2.sh`
+installs the 1Password CLI.
+
+- **Add a customer:** create `.devcontainer/customers/<name>.sh`, then set
+  `CUSTOMER=<name>` in that stack's Portainer env and rebuild. Every other stack
+  stays on `base` and gets the lean image with zero code difference.
+- **`CUSTOMER` MUST be in compose `build.args`** (same reason as `CLI_REFRESH` —
+  Portainer only substitutes stack env into the compose file). It is a *build*
+  arg, so unlike `DEV_PORT`/`CLAUDE_CONFIG_DIR` it bakes into the image and needs
+  no entrypoint re-export.
+- **Keep customer scripts arch-aware** (arm64 target) and **without error
+  masking** — a failed install or an unknown `CUSTOMER` (no matching script)
+  should fail the build, not crash-loop at runtime.
+- The `COPY` of the whole `customers/` dir sits late in the Dockerfile so shared
+  layers above stay cacheable; editing any customer script busts only that tail.
