@@ -18,7 +18,7 @@ RUN if getent passwd $USER_UID >/dev/null; then userdel -r "$(getent passwd $USE
       git curl wget ca-certificates gnupg less sudo openssh-server \
       bash-completion vim nano \
       iputils-ping dnsutils traceroute net-tools netcat-openbsd \
-      jq unzip zip tree rsync htop procps screen \
+      jq unzip zip tree rsync htop procps tmux \
  && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g @anthropic-ai/claude-code @openai/codex netlify-cli
