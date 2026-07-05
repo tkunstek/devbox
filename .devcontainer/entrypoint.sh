@@ -9,6 +9,9 @@ mkdir -p /home/dev/.ssh
 if [ -n "${SSH_PUBKEY:-}" ]; then
   echo "$SSH_PUBKEY" > /home/dev/.ssh/authorized_keys
 fi
+if [ -n "${SSH_PUBKEY2:-}" ]; then
+  echo "$SSH_PUBKEY2" >> /home/dev/.ssh/authorized_keys
+fi
 chmod 700 /home/dev/.ssh
 [ -f /home/dev/.ssh/authorized_keys ] && chmod 600 /home/dev/.ssh/authorized_keys
 
