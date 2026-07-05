@@ -6,7 +6,7 @@ set -euo pipefail
 
 # 1Password CLI (official apt repo, arch-aware)
 ARCH="$(dpkg --print-architecture)"
-curl -fsSL https://downloads.1password.com/linux/keyrings/1password.asc \
+curl -fsSL https://downloads.1password.com/linux/keys/1password.asc \
   | gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg
 echo "deb [arch=${ARCH} signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/${ARCH} stable main" \
   > /etc/apt/sources.list.d/1password.list
