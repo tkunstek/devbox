@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
-# SSH public-key provisioning. SSH_PUBKEY is set per customer in the stack's
-# environment (Portainer). Written fresh each start so the env value is the
-# source of truth (`.ssh` itself persists in the `home` volume). The strict
-# perms below are mandatory — sshd silently rejects keys otherwise.
+# SSH public-key provisioning. SSH_PUBKEY / SSH_PUBKEY2 are set per customer in
+# the stack's environment (Portainer). Written fresh each start so the env
+# values are the sole source of truth (`.ssh` itself persists in the `home`
+# volume) — keys added by hand inside the container do NOT survive a restart;
+# add them as SSH_PUBKEY2 (or another env var) instead. Truncate-then-append so
+# a start with only SSH_PUBKEY2 set can't append a duplicate to the previous
+# file. The strict perms below are mandatory — sshd silently rejects keys
+# otherwise.
 mkdir -p /home/dev/.ssh
-if [ -n "${SSH_PUBKEY:-}" ]; then
-  echo "$SSH_PUBKEY" > /home/dev/.ssh/authorized_keys
-fi
-if [ -n "${SSH_PUBKEY2:-}" ]; then
-  echo "$SSH_PUBKEY2" >> /home/dev/.ssh/authorized_keys
+if [ -n "${SSH_PUBKEY:-}${SSH_PUBKEY2:-}" ]; then
+  : > /home/dev/.ssh/authorized_keys
+  [ -n "${SSH_PUBKEY:-}" ]  && echo "$SSH_PUBKEY"  >> /home/dev/.ssh/authorized_keys
+  [ -n "${SSH_PUBKEY2:-}" ] && echo "$SSH_PUBKEY2" >> /home/dev/.ssh/authorized_keys
 fi
 chmod 700 /home/dev/.ssh
 [ -f /home/dev/.ssh/authorized_keys ] && chmod 600 /home/dev/.ssh/authorized_keys

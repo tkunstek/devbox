@@ -28,8 +28,12 @@ are the whole codebase. See `README.md` for the user-facing operating guide.
 
 - **One parameterized service deployed N times.** All customer-specific values
   are env vars with defaults (`INSTANCE`, `SSH_PORT`, `CODE_PORT`, `DEV_PORT`,
-  `SSH_PUBKEY`); each must be unique per stack. Isolation comes from Portainer
-  namespacing named volumes per stack — there is no per-customer code here.
+  `SSH_PUBKEY`, `SSH_PUBKEY2`); ports/instance must be unique per stack.
+  Isolation comes from Portainer namespacing named volumes per stack — there is
+  no per-customer code here. **A var read by the entrypoint MUST also be listed
+  in compose `environment:`** — Portainer stack env vars only substitute into
+  the compose file; they do not reach the container on their own (this bit
+  `SSH_PUBKEY2` once).
 - **Three volumes, by design.** `home:/home/dev` holds *all* per-tool state
   (Claude/Codex/`gh` logins, code-server + VS Code server, `~/.ssh`,
   `~/.gitconfig`, history) — so a new tool's dotfile persists with no compose
@@ -89,5 +93,8 @@ claude-code is installed `npm install -g` **as root**, so its global dir isn't
 `dev`-writable and its self-updater can't run — it would spam "npm global folder
 isn't writable". The entrypoint sets `DISABLE_AUTOUPDATER=1` (delivered to shells
 the same way as `DEV_PORT`/`CLAUDE_CONFIG_DIR`). **Claude is updated by rebuilding
-the image** (the `npm install -g` pulls latest at build); don't re-enable the
-in-container updater — its writes land in a non-volume dir and vanish on recreation.
+the image with a bumped `CLI_REFRESH` build arg** — the `npm install -g` pulls
+latest at build, but Docker's layer cache reuses the old layer unless
+`CLI_REFRESH` (Portainer stack env → compose `build.args`) changes, so a plain
+rebuild does NOT update the CLIs. Don't re-enable the in-container updater — its
+writes land in a non-volume dir and vanish on recreation.

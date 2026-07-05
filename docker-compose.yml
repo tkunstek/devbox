@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Bump in the Portainer stack env + redeploy with rebuild to force
+        # fresh CLI installs (layer cache otherwise pins the old versions).
+        - CLI_REFRESH=${CLI_REFRESH:-0}
     container_name: ${INSTANCE:-devbox}
     hostname: ${INSTANCE:-devbox}
     volumes:
@@ -18,6 +22,7 @@ services:
       # (DEV_PORT, and CLAUDE_CONFIG_DIR for Claude login persistence) is
       # re-exported by the entrypoint via /etc/profile.d + the code-server exec.
       - SSH_PUBKEY=${SSH_PUBKEY:-}
+      - SSH_PUBKEY2=${SSH_PUBKEY2:-}
       - DEV_PORT=${DEV_PORT:-8081}
     ports:
       - "${SSH_PORT:-2222}:22"

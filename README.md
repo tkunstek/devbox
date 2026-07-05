@@ -32,6 +32,8 @@ Portainer (**Stacks → \<stack\> → Environment variables**). See `.env.exampl
 | `CODE_PORT` | host port → code-server 8443 | yes |
 | `DEV_PORT` | host port → app dev server | yes |
 | `SSH_PUBKEY` | your laptop's public key, injected into `authorized_keys` | no |
+| `SSH_PUBKEY2` | optional second public key (another machine), appended to `authorized_keys` | no |
+| `CLI_REFRESH` | build-cache bust: bump to any new value + rebuild to update the baked-in CLIs | no |
 
 Suggested scheme:
 
@@ -79,6 +81,16 @@ and the running containers pick up the change.
 > **rebuild**, not just a recreate. Compose/env-only changes recreate fine.
 > Confirm the webhook rebuilds the image for Dockerfile changes; if not, trigger
 > a rebuild for those in Portainer.
+
+### Updating the baked-in CLIs (claude, codex, gh, …)
+
+A rebuild alone does **not** refresh the CLIs: the install steps always fetch
+"latest", but Docker reuses their cached layers because the Dockerfile text is
+unchanged. To pull current versions, bump `CLI_REFRESH` in the stack's
+environment variables (any new value — today's date works), then redeploy
+**with re-build enabled**. The changed build arg invalidates the cache from the
+CLI installs down, so claude-code, codex, netlify, gh, cloudflared and supabase
+all reinstall at their latest versions.
 
 ---
 

@@ -21,6 +21,13 @@ RUN if getent passwd $USER_UID >/dev/null; then userdel -r "$(getent passwd $USE
       jq unzip zip tree rsync htop procps tmux \
  && rm -rf /var/lib/apt/lists/*
 
+# Cache-bust knob for CLI freshness. The RUNs below always fetch "latest", but
+# Docker reuses their cached layers as long as the instruction text is
+# unchanged — so a rebuild alone does NOT update the CLIs. Bump CLI_REFRESH in
+# the Portainer stack env (any new value, e.g. today's date) and redeploy with
+# rebuild: changing the ARG invalidates the cache from here down, forcing fresh
+# installs of claude/codex/netlify, gh, cloudflared, and supabase.
+ARG CLI_REFRESH=0
 RUN npm install -g @anthropic-ai/claude-code @openai/codex netlify-cli
 
 RUN curl -fsSL https://code-server.dev/install.sh | sh
